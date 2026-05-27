@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sifra AI - Hybrid Local Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="manifest" href="manifest.json">
+
+    <style>
+        :root { --primary: #00e676; --secondary: #00b8d4; --bg: #070b14; --card: #1e293b; --danger: #ff4757; --warning: #ffb142; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg); color: white; height: 100vh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .btn { border: none; padding: 12px 20px; border-radius: 50px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 0.95rem; text-align: center;}
+
+        /* SETUP SCREENS */
+        #setup-wrapper { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; width: 100vw; position: absolute; z-index: 100; background: var(--bg); overflow: hidden; }
+        .cyber-grid { position: absolute; bottom: 0; left: -50%; width: 200%; height: 50%; background-image: linear-gradient(rgba(0, 230, 118, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 230, 118, 0.1) 1px, transparent 1px); background-size: 40px 40px; transform: perspective(500px) rotateX(60deg) translateY(100px); animation: gridMove 4s linear infinite; z-index: 0; opacity: 0.6; }
+        @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(40px); } }
+
+        .bg-orbs { position: absolute; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .orb { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.2; animation: float 8s infinite alternate ease-in-out; }
+        .orb-1 { width: 300px; height: 300px; background: var(--primary); top: -10%; left: -10%; }
+        .orb-2 { width: 350px; height: 350px; background: var(--secondary); top: 50%; right: -20%; animation-delay: -4s; }
+        @keyframes float { 0% { transform: translateY(0px) scale(1); } 100% { transform: translateY(50px) scale(1.1); } }
+
+        .setup-card { position: relative; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.08); padding: 35px 25px; border-radius: 24px; width: 92%; max-width: 440px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.6); z-index: 1; }
+        .screen { display: none; animation: fadeInCard 0.5s ease; }
+        .active { display: block; }
+        @keyframes fadeInCard { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .ai-logo-wrapper { width: 75px; height: 75px; margin: 0 auto 15px; background: linear-gradient(135deg, rgba(0, 230, 118, 0.05), rgba(0, 184, 212, 0.15)); border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(0, 230, 118, 0.3); box-shadow: 0 0 25px rgba(0, 230, 118, 0.15); animation: pulseLogo 2.5s infinite ease-in-out; }
+        .ai-text-logo { font-family: 'Space Mono', monospace; font-size: 2rem; font-weight: 700; color: var(--primary); text-shadow: 0 0 15px rgba(0, 230, 118, 0.6); letter-spacing: -1px; }
+        @keyframes pulseLogo { 0%, 100% { box-shadow: 0 0 15px rgba(0, 230, 118, 0.15); transform: scale(1); } 50% { box-shadow: 0 0 35px rgba(0, 230, 118, 0.5); transform: scale(1.08); } }
+
+        .gradient-title { background: linear-gradient(90deg, #ffffff, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 2.2rem; margin-bottom: 5px; }
+        
+        /* Choice Boxes */
+        .engine-options { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; text-align: left; }
+        .option-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 15px; border-radius: 16px; cursor: pointer; transition: 0.2s; }
+        .option-box:hover { background: rgba(255,255,255,0.06); border-color: var(--secondary); }
+        .option-box.selected { background: rgba(0, 230, 118, 0.08); border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 230, 118, 0.1); }
+        .opt-title { font-weight: 600; font-size: 1rem; color: white; display: flex; justify-content: space-between; align-items: center;}
+        .opt-desc { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; line-height: 1.3; }
+        .opt-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase;}
+        .tag-lite { background: rgba(0, 184, 212, 0.2); color: var(--secondary); }
+        .tag-pro { background: rgba(0, 230, 118, 0.2); color: var(--primary); }
+
+        .download-btn { background: linear-gradient(90deg, var(--secondary), var(--primary)); color: #022c16; box-shadow: 0 8px 25px rgba(0, 230, 118, 0.2); width: 100%; font-size: 1.05rem; padding: 15px; }
+        .cancel-btn { background: rgba(255, 71, 87, 0.05); color: var(--danger); border: 1px solid rgba(255, 71, 87, 0.2); width: 100%; }
+        
+        .progress-container { width: 100%; height: 10px; background: rgba(0,0,0,0.6); border-radius: 10px; margin: 25px 0 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+        .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); box-shadow: 0 0 15px var(--primary); transition: width 0.3s ease; }
+
+        .tech-footer { position: absolute; bottom: 20px; width: 100%; text-align: center; font-family: 'Space Mono', monospace; font-size: 0.65rem; color: rgba(255,255,255,0.3); z-index: 1; letter-spacing: 1px; }
+        .close-screen-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #64748b; cursor: pointer; transition: 0.2s; padding: 5px; border-radius: 50%; display: flex; justify-content: center; align-items: center; z-index: 10; }
+        .close-screen-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+
+        /* CHAT UI */
+        #chat-wrapper { display: none; flex-direction: column; height: 100vh; width: 100vw; background: var(--bg); }
+        .chat-header { background: var(--card); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 10; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #000; box-shadow: 0 4px 10px rgba(0, 230, 118, 0.3); font-weight: 800; font-size: 1.2rem;}
+        .status-dot { width: 8px; height: 8px; background: #00e676; border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 8px #00e676; }
+        .reset-btn { background: transparent; color: var(--danger); border: 1px solid rgba(255, 71, 87, 0.5); padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        
+        .chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: linear-gradient(180deg, #0f172a, #0b1120); }
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 0.95rem; line-height: 1.5; animation: fadeInChat 0.3s ease; }
+        .msg-ai { background: var(--card); color: white; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .msg-user { background: var(--primary); color: #042f15; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500; }
+        @keyframes fadeInChat { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .chat-footer { background: var(--card); padding: 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); }
+        .chat-footer input { flex: 1; padding: 15px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; font-size: 1rem; outline: none; }
+        .send-btn { background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #000; cursor: pointer; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-card { background: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 340px; text-align: center; border: 1px solid rgba(255,255,255,0.1); transform: scale(0.9); transition: 0.3s; position: relative; }
+        .modal-overlay.show .modal-card { transform: scale(1); }
+        .modal-title { font-size: 1.3rem; margin-bottom: 10px; font-weight: 800; }
+        .modal-text { color: #94a3b8; font-size: 0.85rem; margin-bottom: 25px; line-height: 1.4; }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-light { background: rgba(255,255,255,0.1); color: white; }
+        .btn-green { background: var(--primary); color: #000; }
+        .btn-red { background: var(--danger); color: white; }
+        
+        .spinner { animation: spin 1s linear infinite; margin-left: 8px; vertical-align: middle; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<button id="pwa-install-btn" class="btn" style="display: none; position: fixed; top: 15px; left: 15px; background: linear-gradient(90deg, #ffb142, #ff4757); color: #fff; z-index: 9999; box-shadow: 0 0 15px rgba(255, 177, 66, 0.4);">
+    ⬇️ Install App
+</button>
+
+<div id="setup-wrapper">
+    <div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+    <div class="cyber-grid"></div>
+
+    <div class="setup-card">
+        <div id="intro-screen" class="screen active">
+            <div class="ai-logo-wrapper"><span class="ai-text-logo">AI</span></div>
+            <h2 class="gradient-title">Sifra Engine</h2>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 10px;">Select Neural Core for your Device</p>
+            
+<div class="engine-options">
+    <div id="opt-lite" class="option-box selected" onclick="selectEngine('lite')">
+        <div class="opt-title">Sifra Lite <span class="opt-tag tag-lite">CPU Base</span></div>
+        <div class="opt-desc">Model: TinyLlama (~600MB). Basic PC ya Laptop ke CPU par aaram se chalega. (Memory History Enabled!)</div>
+    </div>
+    <div id="opt-pro" class="option-box" onclick="selectEngine('pro')">
+        <div class="opt-title">Sifra Pro <span class="opt-tag tag-pro">WebGPU / NPU</span></div>
+        <div class="opt-desc">Model: Gemma-2B (~1.5GB). Fast Speed, Advanced Coding & Logic. Requires PC/Laptop with WebGPU & 8GB+ RAM.</div>
+    </div>
+</div>
+            
+            <button id="init-btn" class="btn download-btn" onclick="handleInitClick()">Initialize Selected Core</button>
+        </div>
+
+        <div id="loading-screen" class="screen">
+            <button class="close-screen-btn" onclick="hideLoadingScreen()" title="Hide Progress">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+
+            <div class="ai-logo-wrapper" style="width: 75px; height: 75px;"><span class="ai-text-logo" style="font-size: 1.5rem;">AI</span></div>
+            <h3 id="download-status-text" style="font-size: 0.9rem; font-weight: 600; color: var(--secondary);">Connecting...</h3>
+            
+            <div class="progress-container"><div class="progress-bar" id="pb"></div></div>
+            <div style="font-size: 2.8rem; font-weight: 800; color: var(--primary);" id="percent">0%</div>
+            <p style="color: #64748b; font-size: 0.75rem; margin-top: 5px;" id="file-name">Preparing weights...</p>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px; width: 100%;">
+                <button class="btn" id="pause-btn" onclick="togglePause()" style="flex: 1; background: rgba(0, 184, 212, 0.1); color: var(--secondary); border: 1px solid rgba(0, 184, 212, 0.3); margin-top: 0;">Pause</button>
+                <button class="btn cancel-btn" id="cancel-btn" onclick="cancelDownload()" style="flex: 1; margin-top: 0;">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div class="tech-footer" id="tech-footer-text">CORE: UNINITIALIZED | STORAGE: BROWSER CACHE</div>
+</div>
+
+<div id="chat-wrapper">
+    <div class="chat-header">
+        <div class="header-left">
+            <div class="avatar" id="bot-avatar">AI</div>
+            <div>
+                <h3 id="bot-title" style="font-size: 1.1rem; font-weight: 600;">Sifra AI</h3>
+                <p id="bot-status" style="font-size: 0.8rem; color: #94a3b8;"><span class="status-dot"></span>Local Engine Active</p>
+            </div>
+        </div>
+        <button class="reset-btn" onclick="openModal('resetModal')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Reset
+        </button>
+    </div>
+
+    <div class="chat-body" id="chat-box"></div>
+
+    <div class="chat-footer">
+        <input type="text" id="userInput" placeholder="Ask anything..." onkeypress="handleEnter(event)">
+        <button class="send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#000" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+    </div>
+</div>
+
+<div id="downloadModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 class="modal-title" id="modal-title-text">Download Model?</h3>
+        <p class="modal-text" id="modal-desc-text">Loading configuration...</p>
+        <div class="modal-actions">
+            <button class="modal-btn btn-light" onclick="closeModal('downloadModal')">Cancel</button>
+            <button class="modal-btn btn-green" onclick="startDownload()">Start</button>
+        </div>
+    </div>
+</div>
+
+<div id="resetModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 class="modal-title">Restart AI?</h3>
+        <p class="modal-text">This will reload the app. Model cache in your browser remains safe.</p>
+        <div class="modal-actions">
+            <button class="modal-btn btn-light" onclick="closeModal('resetModal')">Keep</button>
+            <button class="modal-btn btn-red" onclick="location.reload()">Reload</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0';
+    import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+
+    const setupWrapper = document.getElementById('setup-wrapper'); 
+    const chatWrapper = document.getElementById('chat-wrapper');
+    const introScreen = document.getElementById('intro-screen'); 
+    const loadingScreen = document.getElementById('loading-screen');
+    const pb = document.getElementById('pb'); 
+    const percent = document.getElementById('percent');
+    const statusText = document.getElementById('download-status-text');
+    const fileNameText = document.getElementById('file-name');
+    const initBtn = document.getElementById('init-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const chatBox = document.getElementById('chat-box');
+    const techFooterText = document.getElementById('tech-footer-text');
+
+    let currentEngine = 'lite'; 
+    let transformersGenerator = null; 
+    let mlcEngine = null; 
+    let chatHistory = []; // Global history managed for BOTH engines
+
+    let isDownloading = false;
+    let isPaused = false;
+
+    env.allowLocalModels = false; 
+
+    window.openModal = (id) => document.getElementById(id).classList.add('show');
+    window.closeModal = (id) => document.getElementById(id).classList.remove('show');
+
+    window.selectEngine = (type) => {
+        if (isDownloading) return;
+        currentEngine = type;
+        document.getElementById('opt-lite').classList.remove('selected');
+        document.getElementById('opt-pro').classList.remove('selected');
+        
+        if(type === 'lite') {
+            document.getElementById('opt-lite').classList.add('selected');
+            techFooterText.innerText = "CORE: TRANSFORMERS.JS | ENVIRONMENT: CPU";
+        } else {
+            document.getElementById('opt-pro').classList.add('selected');
+            techFooterText.innerText = "CORE: WEB-LLM | ENVIRONMENT: WEBGPU/NPU";
+        }
+    };
+
+    window.handleInitClick = () => {
+        if (isDownloading || isPaused) {
+            introScreen.classList.remove('active');
+            loadingScreen.classList.add('active');
+            return;
+        }
+
+        const title = document.getElementById('modal-title-text');
+        const desc = document.getElementById('modal-desc-text');
+
+        if(currentEngine === 'lite') {
+            title.innerText = "Download Sifra Lite?";
+            desc.innerHTML = "This will fetch **TinyLlama-1.1B (~600MB)**. It executes directly on your phone's CPU via Transformers.js. Highly compatible!";
+        } else {
+            title.innerText = "Download Sifra Pro?";
+            desc.innerHTML = "This will download **Gemma-2B (~1.5GB)** via Web-LLM. It saves directly to browser cache (IndexedDB) and utilizes WebGPU for heavy local processing.";
+        }
+        window.openModal('downloadModal');
+    };
+
+    window.hideLoadingScreen = () => {
+        loadingScreen.classList.remove('active');
+        introScreen.classList.add('active');
+        initBtn.innerText = "View Download Progress";
+        initBtn.style.background = "linear-gradient(90deg, #00b8d4, #00e676)";
+    };
+
+    window.togglePause = () => {
+        isPaused = !isPaused;
+        if (isPaused) {
+            pauseBtn.innerText = "Resume";
+            pauseBtn.style.color = "var(--primary)";
+            pauseBtn.style.borderColor = "rgba(0, 230, 118, 0.3)";
+            statusText.innerText = "UI Suspended (Cache active)";
+        } else {
+            pauseBtn.innerText = "Pause";
+            pauseBtn.style.color = "var(--secondary)";
+            pauseBtn.style.borderColor = "rgba(0, 184, 212, 0.3)";
+            statusText.innerText = "Syncing Neural Data...";
+        }
+    };
+
+    window.cancelDownload = () => location.reload();
+
+    function updateUI(p, text, subtext) {
+        if(isPaused) return; 
+        pb.style.width = p + '%';
+        percent.innerText = Math.floor(p) + '%';
+        if(text) statusText.innerText = text;
+        if(subtext) fileNameText.innerText = subtext;
+    }
+
+    window.startDownload = async () => {
+        window.closeModal('downloadModal'); 
+        introScreen.classList.remove('active'); 
+        loadingScreen.classList.add('active');
+        isDownloading = true;
+
+        try {
+            if (currentEngine === 'lite') {
+                transformersGenerator = await pipeline('text-generation', 'Xenova/TinyLlama-1.1B-Chat-v1.0', {
+                    progress_callback: (data) => {
+                        if (data.status === 'progress') {
+                            let p = Math.round((data.loaded / data.total) * 100);
+                            if(isNaN(p)) p = 0;
+                            updateUI(p, `Downloading Chunk Data...`, `File: ${data.file}`);
+                        } else if (data.status === 'ready') {
+                            updateUI(100, `Block Cached!`, `Ready: ${data.file}`);
+                        }
+                    }
+                });
+                
+                chatHistory.push({ role: "system", content: "You are Sifra, a helpful AI assistant." });
+                document.getElementById('bot-title').innerText = "Sifra (TinyLlama-Lite)";
+                document.getElementById('bot-avatar').innerText = "TL";
+                document.getElementById('bot-status').innerHTML = "<span class='status-dot'></span>CPU Core Online (Memory Fixed)";
+                chatBox.innerHTML += `<div class="msg msg-ai">🚀 Sifra Lite Online! Running locally on CPU. Chat History is now enabled! Ask away!</div>`;
+
+            } else {
+                const initProgressCallback = (report) => {
+                    let progress = Math.round(report.progress * 100);
+                    updateUI(progress, `Fetching Gemma Over WebGPU...`, report.text);
+                };
+
+                mlcEngine = await CreateMLCEngine("gemma-2b-it-q4f32_1-MLC", { initProgressCallback });
+                chatHistory.push({ role: "system", content: "You are Sifra, an advanced offline AI assistant." });
+
+                document.getElementById('bot-title').innerText = "Sifra Pro (Gemma-2B)";
+                document.getElementById('bot-avatar').innerText = "G2";
+                document.getElementById('bot-status').innerHTML = "<span class='status-dot' style='background:#00b8d4; box-shadow:0 0 8px #00b8d4;'></span>WebGPU Hardware Accelerated";
+                chatBox.innerHTML += `<div class="msg msg-ai">🚀 System Online! Sifra Pro successfully loaded Google Gemma via WebGPU. Ready for high-logic coding!</div>`;
+            }
+
+            setupWrapper.style.display = 'none'; 
+            chatWrapper.style.display = 'flex'; 
+
+        } catch (error) {
+            console.error(error);
+            isDownloading = false;
+            statusText.innerText = "Initialization Error!";
+            statusText.style.color = "var(--danger)";
+            fileNameText.innerText = currentEngine === 'pro' ? "Check if browser supports WebGPU and run via Local Server!" : "Insufficient memory allocations.";
+        }
+    };
+
+    window.escapeHTML = (text) => {
+        const div = document.createElement('div'); div.textContent = text; return div.innerHTML;
+    };
+
+    window.handleEnter = (e) => { if (e.key === 'Enter') window.sendMessage(); }
+
+    window.sendMessage = async () => {
+        const input = document.getElementById('userInput');
+        const text = input.value.trim();
+        if (!text) return;
+        if (currentEngine === 'lite' && !transformersGenerator) return;
+        if (currentEngine === 'pro' && !mlcEngine) return;
+
+        const safeText = window.escapeHTML(text);
+        chatBox.innerHTML += `<div class="msg msg-user">${safeText}</div>`;
+        input.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
+        // Save current user message to shared chat memory array
+        chatHistory.push({ role: "user", content: text });
+
+        const typingId = 'typing-' + Date.now();
+        const procMessage = currentEngine === 'lite' ? "Inference on CPU..." : "WebGPU Matrix Compute...";
+        chatBox.innerHTML += `<div id="${typingId}" class="msg msg-ai" style="opacity: 0.8; font-style: italic;">
+            ${procMessage} <svg class="spinner" viewBox="0 0 50 50" width="16" height="16" stroke="currentColor" fill="none" stroke-width="4"><circle cx="25" cy="25" r="20" stroke-dasharray="31.4 31.4"></circle></svg>
+        </div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        try {
+            let aiResponse = "";
+
+            if(currentEngine === 'lite') {
+                // FIXED: Compiling entire Chat History into TinyLlama prompt format
+                let dynamicPrompt = "";
+                for (const msg of chatHistory) {
+                    if (msg.role === 'system') {
+                        dynamicPrompt += `<|system|>\n${msg.content}</s>\n`;
+                    } else if (msg.role === 'user') {
+                        dynamicPrompt += `<|user|>\n${msg.content}</s>\n`;
+                    } else if (msg.role === 'assistant') {
+                        dynamicPrompt += `<|assistant|>\n${msg.content}</s>\n`;
+                    }
+                }
+                dynamicPrompt += `<|assistant|>\n`; // Final structural prompt edge
+
+                const output = await transformersGenerator(dynamicPrompt, {
+                    max_new_tokens: 150, // Coding logic ke liye token thoda badha diya hai
+                    temperature: 0.6,
+                    do_sample: true
+                });
+                
+                // Extract only the latest response block securely
+                aiResponse = output[0].generated_text.split('<|assistant|>\n').pop().replace('</s>', '').trim();
+                
+                // Saving AI response back into history for loop recall
+                chatHistory.push({ role: "assistant", content: aiResponse });
+
+            } else {
+                // Gemma Pro Engine handles array natively
+                const reply = await mlcEngine.chat.completions.create({ messages: chatHistory });
+                aiResponse = reply.choices[0].message.content.trim();
+                chatHistory.push({ role: "assistant", content: aiResponse });
+            }
+            
+            document.getElementById(typingId).remove();
+            const formattedResponse = window.escapeHTML(aiResponse).replace(/\n/g, '<br>');
+            chatBox.innerHTML += `<div class="msg msg-ai">${formattedResponse}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById(typingId).innerText = "Hardware Inference Error. Out of memory or thread crash.";
+        }
+    }
+    // PWA INSTALL LOGIC
+let deferredPrompt;
+const installBtn = document.getElementById('pwa-install-btn');
+
+// Agar pehle se install hai (Standalone mode), toh button hamesha hide rahega (CSS Fallback)
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    installBtn.style.display = 'none';
+}
+
+// Jab browser check kar le ki app install ho sakti hai
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block'; // Button dikhao
+});
+
+installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            installBtn.style.display = 'none'; // Accept karte hi hide kar do
+        }
+        deferredPrompt = null;
+    }
+});
+
+// Jab installation pura ho jaye
+window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none'; // Completely hide
+    console.log('Sifra AI Installed Successfully!');
+});
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Registration Failed', err));
+    });
+}
+
+</script>
+
+</body>
+</html>
