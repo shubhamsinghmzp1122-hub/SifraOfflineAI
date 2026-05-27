@@ -1,5 +1,5 @@
 {
-  "name": "Sifra AI",
+  "name": "Sifra AI - Local Engine",
   "short_name": "Sifra AI",
   "description": "Offline AI Engine running locally on your device via WebGPU and CPU.",
   "start_url": "./index.html",
@@ -8,9 +8,16 @@
   "theme_color": "#00e676",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/11696/11696071.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
