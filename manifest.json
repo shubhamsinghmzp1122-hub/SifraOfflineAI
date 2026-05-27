@@ -1,5 +1,5 @@
 {
-  "name": "Sifra AI - Local Engine",
+  "name": "Sifra AI",
   "short_name": "Sifra AI",
   "description": "Offline AI Engine running locally on your device via WebGPU and CPU.",
   "start_url": "./index.html",
