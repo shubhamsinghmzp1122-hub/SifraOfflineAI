@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sifra AI - Hybrid Local Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <link rel="manifest" href="manifest.json">
-
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
         :root { --primary: #00e676; --secondary: #00b8d4; --bg: #070b14; --card: #1e293b; --danger: #ff4757; --warning: #ffb142; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
@@ -94,6 +95,7 @@
     </style>
 </head>
 <body>
+
 <button id="pwa-install-btn" class="btn" style="display: none; position: fixed; top: 15px; left: 15px; background: linear-gradient(90deg, #ffb142, #ff4757); color: #fff; z-index: 9999; box-shadow: 0 0 15px rgba(255, 177, 66, 0.4);">
     ⬇️ Install App
 </button>
@@ -108,16 +110,16 @@
             <h2 class="gradient-title">Sifra Engine</h2>
             <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 10px;">Select Neural Core for your Device</p>
             
-<div class="engine-options">
-    <div id="opt-lite" class="option-box selected" onclick="selectEngine('lite')">
-        <div class="opt-title">Sifra Lite <span class="opt-tag tag-lite">CPU Base</span></div>
-        <div class="opt-desc">Model: TinyLlama (~600MB). Basic PC ya Laptop ke CPU par aaram se chalega. (Memory History Enabled!)</div>
-    </div>
-    <div id="opt-pro" class="option-box" onclick="selectEngine('pro')">
-        <div class="opt-title">Sifra Pro <span class="opt-tag tag-pro">WebGPU / NPU</span></div>
-        <div class="opt-desc">Model: Gemma-2B (~1.5GB). Fast Speed, Advanced Coding & Logic. Requires PC/Laptop with WebGPU & 8GB+ RAM.</div>
-    </div>
-</div>
+            <div class="engine-options">
+                <div id="opt-lite" class="option-box selected" onclick="selectEngine('lite')">
+                    <div class="opt-title">Sifra Lite <span class="opt-tag tag-lite">CPU Base</span></div>
+                    <div class="opt-desc">Model: TinyLlama (~600MB). Basic PC ya Laptop ke CPU par aaram se chalega. (Memory History Enabled!)</div>
+                </div>
+                <div id="opt-pro" class="option-box" onclick="selectEngine('pro')">
+                    <div class="opt-title">Sifra Pro <span class="opt-tag tag-pro">WebGPU / NPU</span></div>
+                    <div class="opt-desc">Model: Gemma-2B (~1.5GB). Fast Speed, Advanced Coding & Logic. Requires PC/Laptop with WebGPU & 8GB+ RAM.</div>
+                </div>
+            </div>
             
             <button id="init-btn" class="btn download-btn" onclick="handleInitClick()">Initialize Selected Core</button>
         </div>
@@ -209,7 +211,7 @@
     let currentEngine = 'lite'; 
     let transformersGenerator = null; 
     let mlcEngine = null; 
-    let chatHistory = []; // Global history managed for BOTH engines
+    let chatHistory = []; 
 
     let isDownloading = false;
     let isPaused = false;
@@ -246,10 +248,10 @@
 
         if(currentEngine === 'lite') {
             title.innerText = "Download Sifra Lite?";
-            desc.innerHTML = "This will fetch **TinyLlama-1.1B (~600MB)**. It executes directly on your phone's CPU via Transformers.js. Highly compatible!";
+            desc.innerHTML = "This will fetch **TinyLlama-1.1B (~600MB)**. It executes directly on your PC's CPU via Transformers.js. Highly compatible!";
         } else {
             title.innerText = "Download Sifra Pro?";
-            desc.innerHTML = "This will download **Gemma-2B (~1.5GB)** via Web-LLM. It saves directly to browser cache (IndexedDB) and utilizes WebGPU for heavy local processing.";
+            desc.innerHTML = "This will download **Gemma-2B (~1.5GB)** via Web-LLM. It saves directly to browser cache and utilizes WebGPU for heavy processing.";
         }
         window.openModal('downloadModal');
     };
@@ -309,7 +311,7 @@
                 chatHistory.push({ role: "system", content: "You are Sifra, a helpful AI assistant." });
                 document.getElementById('bot-title').innerText = "Sifra (TinyLlama-Lite)";
                 document.getElementById('bot-avatar').innerText = "TL";
-                document.getElementById('bot-status').innerHTML = "<span class='status-dot'></span>CPU Core Online (Memory Fixed)";
+                document.getElementById('bot-status').innerHTML = "<span class='status-dot'></span>CPU Core Online";
                 chatBox.innerHTML += `<div class="msg msg-ai">🚀 Sifra Lite Online! Running locally on CPU. Chat History is now enabled! Ask away!</div>`;
 
             } else {
@@ -357,7 +359,6 @@
         input.value = '';
         chatBox.scrollTop = chatBox.scrollHeight;
         
-        // Save current user message to shared chat memory array
         chatHistory.push({ role: "user", content: text });
 
         const typingId = 'typing-' + Date.now();
@@ -371,7 +372,6 @@
             let aiResponse = "";
 
             if(currentEngine === 'lite') {
-                // FIXED: Compiling entire Chat History into TinyLlama prompt format
                 let dynamicPrompt = "";
                 for (const msg of chatHistory) {
                     if (msg.role === 'system') {
@@ -382,22 +382,18 @@
                         dynamicPrompt += `<|assistant|>\n${msg.content}</s>\n`;
                     }
                 }
-                dynamicPrompt += `<|assistant|>\n`; // Final structural prompt edge
+                dynamicPrompt += `<|assistant|>\n`; 
 
                 const output = await transformersGenerator(dynamicPrompt, {
-                    max_new_tokens: 150, // Coding logic ke liye token thoda badha diya hai
+                    max_new_tokens: 150, 
                     temperature: 0.6,
                     do_sample: true
                 });
                 
-                // Extract only the latest response block securely
                 aiResponse = output[0].generated_text.split('<|assistant|>\n').pop().replace('</s>', '').trim();
-                
-                // Saving AI response back into history for loop recall
                 chatHistory.push({ role: "assistant", content: aiResponse });
 
             } else {
-                // Gemma Pro Engine handles array natively
                 const reply = await mlcEngine.chat.completions.create({ messages: chatHistory });
                 aiResponse = reply.choices[0].message.content.trim();
                 chatHistory.push({ role: "assistant", content: aiResponse });
@@ -413,45 +409,44 @@
             document.getElementById(typingId).innerText = "Hardware Inference Error. Out of memory or thread crash.";
         }
     }
+
+    // ==========================================
     // PWA INSTALL LOGIC
-let deferredPrompt;
-const installBtn = document.getElementById('pwa-install-btn');
+    // ==========================================
+    let deferredPrompt;
+    const installBtn = document.getElementById('pwa-install-btn');
 
-// Agar pehle se install hai (Standalone mode), toh button hamesha hide rahega (CSS Fallback)
-if (window.matchMedia('(display-mode: standalone)').matches) {
-    installBtn.style.display = 'none';
-}
-
-// Jab browser check kar le ki app install ho sakti hai
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = 'block'; // Button dikhao
-});
-
-installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            installBtn.style.display = 'none'; // Accept karte hi hide kar do
-        }
-        deferredPrompt = null;
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        installBtn.style.display = 'none';
     }
-});
 
-// Jab installation pura ho jaye
-window.addEventListener('appinstalled', () => {
-    installBtn.style.display = 'none'; // Completely hide
-    console.log('Sifra AI Installed Successfully!');
-});
-
-// Register Service Worker
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Registration Failed', err));
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'block'; 
     });
-}
+
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                installBtn.style.display = 'none'; 
+            }
+            deferredPrompt = null;
+        }
+    });
+
+    window.addEventListener('appinstalled', () => {
+        installBtn.style.display = 'none'; 
+        console.log('Sifra AI Installed Successfully!');
+    });
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Registration Failed', err));
+        });
+    }
 
 </script>
 
